@@ -4,181 +4,160 @@
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Waitlist Capacity Simulator</title>
+
+  <!-- Google Font: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+
   <link rel="stylesheet" href="style.css" />
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
+
 <body>
   <div class="container">
 
+    <!-- HEADER -->
     <header>
-      <h1>Waitlist Capacity Simulator</h1>
-      <p class="sub">
-        Scenario modelling demo (synthetic). Not clinical advice. No patient data.
-      </p>
+      <div>
+        <h1>Waitlist Capacity Simulator</h1>
+        <p class="sub">
+          Scenario modelling demo (synthetic). Not clinical advice. No patient data.
+        </p>
+      </div>
     </header>
 
-    <!-- INPUT CONTROLS -->
-    <section class="card grid">
-      <div>
-        <label>Avg referrals per day</label>
-        <input id="arrivalRate" type="number" min="0" step="0.1" value="18" />
-      </div>
+    <!-- ================= ANALYSIS ZONE ================= -->
+    <section class="analysis">
 
-      <div>
-        <label>Appointments per day (capacity)</label>
-        <input id="capacityPerDay" type="number" min="0" step="1" value="16" />
-      </div>
+      <!-- INPUT CONTROLS -->
+      <section class="card grid">
+        <div>
+          <label>Avg referrals per day</label>
+          <input id="arrivalRate" type="number" step="0.1" value="18" />
+        </div>
 
-      <div>
-        <label>DNA rate (%)</label>
-        <input id="dnaRate" type="number" min="0" max="100" step="1" value="12" />
-      </div>
+        <div>
+          <label>Appointments per day (capacity)</label>
+          <input id="capacityPerDay" type="number" step="1" value="16" />
+        </div>
 
-      <div>
-        <label>DNA rebook rate (%)</label>
-        <input id="rebookRate" type="number" min="0" max="100" step="1" value="70" />
-      </div>
+        <div>
+          <label>DNA rate (%)</label>
+          <input id="dnaRate" type="number" step="1" value="12" />
+        </div>
 
-      <div>
-        <label>Rebook delay (days)</label>
-        <input id="rebookDelay" type="number" min="0" step="1" value="7" />
-      </div>
+        <div>
+          <label>DNA rebook rate (%)</label>
+          <input id="rebookRate" type="number" step="1" value="70" />
+        </div>
 
-      <div>
-        <label>Simulation horizon (days)</label>
-        <input id="days" type="number" min="14" step="1" value="180" />
-      </div>
+        <div>
+          <label>Rebook delay (days)</label>
+          <input id="rebookDelay" type="number" step="1" value="7" />
+        </div>
 
-      <div>
-        <label>Warm-up (days)</label>
-        <input id="warmup" type="number" min="0" step="1" value="14" />
-      </div>
+        <div>
+          <label>Simulation horizon (days)</label>
+          <input id="days" type="number" step="1" value="180" />
+        </div>
 
-      <div>
-        <label>Random seed</label>
-        <input id="seed" type="number" step="1" value="42" />
-      </div>
+        <div>
+          <label>Warm-up (days)</label>
+          <input id="warmup" type="number" step="1" value="14" />
+        </div>
 
-      <div class="full">
-        <button id="runBtn">Run simulation</button>
-        <button id="exampleBtn" class="secondary">Load example scenarios</button>
-      </div>
+        <div>
+          <label>Random seed</label>
+          <input id="seed" type="number" step="1" value="42" />
+        </div>
+
+        <div>
+          <label>£ cost per WTE per year</label>
+          <input id="wteCostAnnual" type="number" step="1000" value="55000" />
+        </div>
+
+        <div>
+          <label>Extra slots/day per +1 WTE</label>
+          <input id="slotsPerWTE" type="number" step="1" value="2" />
+        </div>
+
+        <div class="full">
+          <button id="runBtn">Run simulation</button>
+          <button id="exampleBtn" class="secondary">Load example scenarios</button>
+        </div>
+      </section>
+
+      <!-- SCENARIOS -->
+      <section class="card">
+        <h2>Example scenarios</h2>
+        <p class="sub">Auto-fill inputs and run comparable scenarios.</p>
+
+        <div class="scenario-row">
+          <button id="scenarioBaseline" class="secondary">Baseline</button>
+          <button id="scenarioAddCapacity" class="secondary">+2 slots/day</button>
+          <button id="scenarioReduceDNA" class="secondary">Reduce DNA</button>
+          <button id="scenarioAddWTE" class="secondary">+1 WTE</button>
+          <button id="scenarioCompareBtn">Run all & compare</button>
+        </div>
+
+        <div id="scenarioCompare" class="compare"></div>
+      </section>
+
+      <!-- METRICS -->
+      <section class="card">
+        <h2>Key metrics</h2>
+        <div id="metrics" class="metrics"></div>
+      </section>
+
+      <!-- CHARTS -->
+      <section class="card">
+        <h2>Queue size over time</h2>
+        <canvas id="queueChart" height="120"></canvas>
+      </section>
+
+      <section class="card">
+        <h2>Wait time distribution (days)</h2>
+        <canvas id="waitChart" height="120"></canvas>
+      </section>
+
     </section>
+    <!-- =============== END ANALYSIS ZONE =============== -->
 
-    <!-- EXPLANATION -->
-    <section class="card">
+    <!-- ================= CONTEXT ZONE ================= -->
+    <section class="card context">
       <h2>What this simulator does</h2>
       <p>
-        This tool models how a healthcare waitlist evolves over time based on
-        demand, appointment capacity, and non-attendance (DNA) behaviour.
+        This tool models how a healthcare waitlist evolves over time based on demand,
+        appointment capacity, and non-attendance (DNA) behaviour.
       </p>
       <p>
-        It is designed for <strong>service planning, policy analysis, and scenario
-        testing</strong> — for example, understanding how changes in staffing,
-        referral volume, or DNA rates may affect queue size and waiting times.
-      </p>
-      <p>
-        All calculations use <strong>synthetic data</strong>. This is a planning
-        and demonstration tool only and should not be used for clinical decision-making.
+        It is designed for service planning, policy analysis, and scenario testing.
+        All calculations use synthetic data only.
       </p>
     </section>
 
-    <section class="card">
+    <section class="card context">
       <h2>How the model works</h2>
       <ul>
-        <li>
-          New referrals arrive each day based on an average daily referral rate
-          with natural random variation.
-        </li>
-        <li>
-          The service has a fixed number of appointment slots per day representing
-          staffing capacity.
-        </li>
-        <li>
-          A proportion of booked appointments result in a DNA (Did Not Attend).
-        </li>
-        <li>
-          Some DNAs are rebooked after a delay, adding additional demand back
-          into the system.
-        </li>
-        <li>
-          Patients who attend are removed from the queue and their waiting time
-          is recorded.
-        </li>
+        <li>Daily referrals follow a stochastic arrival process.</li>
+        <li>Capacity is fixed per day and represents staffing constraints.</li>
+        <li>DNAs may re-enter the system after a delay.</li>
+        <li>Attended patients exit the queue and generate waiting-time data.</li>
       </ul>
-      <p>
-        The simulation runs day-by-day over the selected time horizon, allowing
-        the queue to stabilise after a short warm-up period.
-      </p>
     </section>
 
-    <section class="card">
-      <h2>How to interpret the results</h2>
+    <section class="card context">
+      <h2>Interpreting outputs</h2>
       <ul>
-        <li>
-          <strong>Utilisation</strong> close to 100% indicates the service is operating
-          at or beyond sustainable capacity.
-        </li>
-        <li>
-          <strong>Mean and median wait times</strong> reflect the typical patient experience.
-        </li>
-        <li>
-          <strong>P90 wait</strong> highlights long-wait outliers and pressure in the system.
-        </li>
-        <li>
-          <strong>Seen within 2, 4, and 6 weeks</strong> shows performance against access targets.
-        </li>
-        <li>
-          The <strong>queue size over time</strong> chart indicates whether the system
-          is stable (flat) or unstable (growing).
-        </li>
+        <li>Flat queues indicate a stable system.</li>
+        <li>Growing queues indicate demand > capacity.</li>
+        <li>Cost per week saved reflects marginal workforce efficiency.</li>
       </ul>
-      <p>
-        Scenario comparisons (e.g. increasing capacity or reducing DNA rates)
-        can be explored by adjusting inputs and rerunning the simulation.
-      </p>
-    </section>
-
-    <section class="card">
-  <h2>Example scenarios</h2>
-  <p class="sub" style="margin-top:6px;">
-    Click a scenario to auto-fill inputs and run. Use “Run all & compare” for a quick stakeholder view.
-  </p>
-
-  <div class="scenario-row">
-    <button id="scenarioBaseline" class="secondary">Baseline</button>
-    <button id="scenarioAddCapacity" class="secondary">+2 slots/day capacity</button>
-    <button id="scenarioReduceDNA" class="secondary">Reduce DNA</button>
-    <button id="scenarioCompareBtn">Run all & compare</button>
-  </div>
-
-  <div id="scenarioCompare" class="compare"></div>
-</section>
-
-    <!-- METRICS -->
-    <section class="card">
-      <h2>Key metrics</h2>
-      <div id="metrics" class="metrics"></div>
-    </section>
-
-    <!-- CHARTS -->
-    <section class="card">
-      <h2>Queue size over time</h2>
-      <canvas id="queueChart" height="120"></canvas>
-    </section>
-
-    <section class="card">
-      <h2>Wait time distribution (days)</h2>
-      <canvas id="waitChart" height="120"></canvas>
     </section>
 
     <footer>
-      <p>
-        Built by Shounak • Repo: waitlist-simulator • v1 (daily time-step queue model)
-      </p>
+      Built by Shounak • waitlist-simulator • v1
     </footer>
 
   </div>
