@@ -54,12 +54,15 @@ header h1{
 .full{
   grid-column:1/-1;
   display:flex;
+  flex-wrap:wrap;
   gap:12px;
 }
 
 label{
   font-size:12px;
   color:var(--muted);
+  display:block;
+  margin-bottom:6px;
 }
 
 input{
@@ -84,6 +87,11 @@ button{
 button.secondary{
   background:rgba(255,255,255,0.08);
   border-color:var(--border);
+}
+
+button:disabled{
+  opacity:0.55;
+  cursor:not-allowed;
 }
 
 .metrics{
@@ -111,12 +119,26 @@ button.secondary{
   display:flex;
   flex-wrap:wrap;
   gap:10px;
+  margin-top:10px;
+}
+
+.compare-title{
+  font-weight:700;
+  margin-top:8px;
+}
+
+.compare-sub{
+  margin-top:6px;
+  color:var(--muted);
+  font-size:13px;
+  line-height:1.5;
 }
 
 .compare-table{
   width:100%;
   border-collapse:collapse;
   font-size:13px;
+  margin-top:10px;
 }
 
 .compare-table th,
@@ -125,6 +147,41 @@ button.secondary{
   border-bottom:1px solid var(--border);
 }
 
+.compare-table th{
+  color:rgba(255,255,255,0.80);
+  font-weight:600;
+}
+
+/* Assumptions panel */
+.assumptions{
+  margin-top:10px;
+}
+
+.assumptions-grid{
+  display:grid;
+  grid-template-columns:repeat(4,1fr);
+  gap:12px;
+}
+
+.assumption{
+  background:rgba(0,0,0,0.18);
+  border:1px solid rgba(255,255,255,0.10);
+  border-radius:14px;
+  padding:12px;
+}
+
+.assumption .k{
+  font-size:12px;
+  color:var(--muted);
+  margin-bottom:6px;
+}
+
+.assumption .v{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-size:13px;
+}
+
+/* Context blocks */
 .context{
   font-size:13.5px;
   font-family:Inter,ui-monospace,Menlo,monospace;
@@ -138,9 +195,9 @@ footer{
 }
 
 @media(max-width:900px){
-  .grid,.metrics{grid-template-columns:1fr 1fr;}
+  .grid,.metrics,.assumptions-grid{grid-template-columns:1fr 1fr;}
 }
 
 @media(max-width:520px){
-  .grid,.metrics{grid-template-columns:1fr;}
+  .grid,.metrics,.assumptions-grid{grid-template-columns:1fr;}
 }
