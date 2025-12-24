@@ -15,31 +15,15 @@ function poisson(lambda, rand) {
   const L = Math.exp(-lambda);
   let k = 0;
   let p = 1;
-  do {
-    k++;
-    p *= rand();
-  } while (p > L);
+  do { k++; p *= rand(); } while (p > L);
   return k - 1;
 }
 
 // -------------------- Simulation --------------------
-// Model:
-// - Referrals arrive daily: Poisson(arrivalRate)
-// - Queue stores "dayEnteredQueue" for each person
-// - Each day: capacity slots are attempted
-// - DNA happens with dnaRate
-// - If DNA: rebook with rebookRate after rebookDelay days
-// - If not DNA: they are seen and wait time is recorded
 function simulate(params) {
   const {
-    arrivalRate,
-    capacityPerDay,
-    dnaRate,
-    rebookRate,
-    rebookDelay,
-    days,
-    warmup,
-    seed
+    arrivalRate, capacityPerDay, dnaRate, rebookRate, rebookDelay,
+    days, warmup, seed
   } = params;
 
   const rand = mulberry32(seed);
@@ -96,8 +80,7 @@ function simulate(params) {
   const median = quantile(0.5);
   const p90 = quantile(0.9);
 
-  const within = (daysThreshold) =>
-    n ? (waits.filter(w => w <= daysThreshold).length / n) : null;
+  const within = (t) => (n ? (waits.filter(w => w <= t).length / n) : null);
 
   return {
     queueSizes,
@@ -115,8 +98,9 @@ function simulate(params) {
   };
 }
 
-// -------------------- Charts + UI --------------------
+// -------------------- Formatting --------------------
 let queueChart, waitChart;
+let lastComparisonRows = null;
 
 function fmtPct(x) {
   if (x === null || Number.isNaN(x)) return "—";
@@ -126,7 +110,12 @@ function fmtNum(x, dp = 1) {
   if (x === null || Number.isNaN(x)) return "—";
   return x.toFixed(dp);
 }
+function fmtGBP(x) {
+  if (x === null || Number.isNaN(x)) return "—";
+  return "£" + Math.round(x).toLocaleString();
+}
 
+// -------------------- UI Rendering --------------------
 function renderMetrics(m) {
   const el = document.getElementById("metrics");
   el.innerHTML = "";
@@ -163,37 +152,11 @@ function buildHistogram(data, binSize = 3, maxBins = 30) {
     counts[idx] += 1;
   }
 
-  const labels = counts.map((_, i) => `${i*binSize}-${i*binSize + (binSize-1)}`);
+  const labels = counts.map((_, i) => `${i * binSize}-${i * binSize + (binSize - 1)}`);
   return { labels, counts };
 }
 
-function getParamsFromInputs() {
-  return {
-    arrivalRate: parseFloat(document.getElementById("arrivalRate").value),
-    capacityPerDay: parseInt(document.getElementById("capacityPerDay").value, 10),
-    dnaRate: parseFloat(document.getElementById("dnaRate").value),
-    rebookRate: parseFloat(document.getElementById("rebookRate").value),
-    rebookDelay: parseInt(document.getElementById("rebookDelay").value, 10),
-    days: parseInt(document.getElementById("days").value, 10),
-    warmup: parseInt(document.getElementById("warmup").value, 10),
-    seed: parseInt(document.getElementById("seed").value, 10)
-  };
-}
-
-function run() {
-  const params = getParamsFromInputs();
-  const out = simulate(params);
-
-  renderMetrics(out.metrics);
-  renderCharts(out);
-
-  // Clear comparison view when running normal
-  const cmp = document.getElementById("scenarioCompare");
-  if (cmp) cmp.innerHTML = "";
-}
-
 function renderCharts(out) {
-  // Queue chart
   const qctx = document.getElementById("queueChart").getContext("2d");
   if (queueChart) queueChart.destroy();
   queueChart = new Chart(qctx, {
@@ -212,16 +175,12 @@ function renderCharts(out) {
     }
   });
 
-  // Wait histogram
   const hist = buildHistogram(out.waits, 3, 30);
   const wctx = document.getElementById("waitChart").getContext("2d");
   if (waitChart) waitChart.destroy();
   waitChart = new Chart(wctx, {
     type: "bar",
-    data: {
-      labels: hist.labels,
-      datasets: [{ label: "Count", data: hist.counts }]
-    },
+    data: { labels: hist.labels, datasets: [{ label: "Count", data: hist.counts }] },
     options: {
       responsive: true,
       plugins: { legend: { display: true } },
@@ -233,29 +192,109 @@ function renderCharts(out) {
   });
 }
 
-// -------------------- Example Scenarios --------------------
-const exampleScenarios = {
-  baseline: {
-    name: "Baseline",
-    params: { arrivalRate: 18, capacityPerDay: 16, dnaRate: 12, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
-  },
-  addCapacity: {
-    name: "+2 slots/day capacity",
-    params: { arrivalRate: 18, capacityPerDay: 18, dnaRate: 12, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
-  },
-  reduceDNA: {
-    name: "Reduce DNA (12% → 7%)",
-    params: { arrivalRate: 18, capacityPerDay: 16, dnaRate: 7, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
-  }
-};
+// -------------------- Inputs & Assumptions --------------------
+function getParamsFromInputs() {
+  return {
+    arrivalRate: parseFloat(document.getElementById("arrivalRate").value),
+    capacityPerDay: parseInt(document.getElementById("capacityPerDay").value, 10),
+    dnaRate: parseFloat(document.getElementById("dnaRate").value),
+    rebookRate: parseFloat(document.getElementById("rebookRate").value),
+    rebookDelay: parseInt(document.getElementById("rebookDelay").value, 10),
+    days: parseInt(document.getElementById("days").value, 10),
+    warmup: parseInt(document.getElementById("warmup").value, 10),
+    seed: parseInt(document.getElementById("seed").value, 10)
+  };
+}
+
+function getCostAssumptions() {
+  const wteCostAnnual = parseFloat(document.getElementById("wteCostAnnual").value);
+  const slotsPerWTE = parseFloat(document.getElementById("slotsPerWTE").value);
+  return {
+    wteCostAnnual: Number.isFinite(wteCostAnnual) ? wteCostAnnual : 55000,
+    slotsPerWTE: Number.isFinite(slotsPerWTE) ? slotsPerWTE : 2
+  };
+}
+
+function renderAssumptionsPanel() {
+  const el = document.getElementById("assumptionsPanel");
+  if (!el) return;
+
+  const p = getParamsFromInputs();
+  const c = getCostAssumptions();
+
+  const netDelta = p.capacityPerDay - p.arrivalRate;
+  const utilisationHint =
+    p.capacityPerDay > 0
+      ? (p.arrivalRate / p.capacityPerDay)
+      : null;
+
+  el.innerHTML = `
+    <div class="assumptions-grid">
+      <div class="assumption"><div class="k">Arrival rate</div><div class="v">${fmtNum(p.arrivalRate)} / day</div></div>
+      <div class="assumption"><div class="k">Capacity</div><div class="v">${p.capacityPerDay} slots / day</div></div>
+      <div class="assumption"><div class="k">Net flow (cap − demand)</div><div class="v">${fmtNum(netDelta)} / day</div></div>
+      <div class="assumption"><div class="k">DNA</div><div class="v">${fmtNum(p.dnaRate, 0)}%</div></div>
+      <div class="assumption"><div class="k">Rebook rate</div><div class="v">${fmtNum(p.rebookRate, 0)}%</div></div>
+      <div class="assumption"><div class="k">Rebook delay</div><div class="v">${p.rebookDelay} days</div></div>
+      <div class="assumption"><div class="k">Horizon</div><div class="v">${p.days} days</div></div>
+      <div class="assumption"><div class="k">Warm-up</div><div class="v">${p.warmup} days</div></div>
+      <div class="assumption"><div class="k">Seed</div><div class="v">${p.seed}</div></div>
+      <div class="assumption"><div class="k">Cost per WTE</div><div class="v">${fmtGBP(c.wteCostAnnual)} / year</div></div>
+      <div class="assumption"><div class="k">Slots per WTE</div><div class="v">${Math.max(0, Math.floor(c.slotsPerWTE))} / day</div></div>
+      <div class="assumption"><div class="k">Demand/capacity ratio</div><div class="v">${utilisationHint ? fmtPct(Math.min(utilisationHint, 10)) : "—"}</div></div>
+    </div>
+  `;
+}
+
+// -------------------- Core run --------------------
+function run() {
+  renderAssumptionsPanel();
+
+  const out = simulate(getParamsFromInputs());
+  renderMetrics(out.metrics);
+  renderCharts(out);
+
+  // Running a single sim clears comparison export state
+  lastComparisonRows = null;
+  const exportBtn = document.getElementById("exportCsvBtn");
+  if (exportBtn) exportBtn.disabled = true;
+
+  const cmp = document.getElementById("scenarioCompare");
+  if (cmp) cmp.innerHTML = "";
+}
+
+// -------------------- Scenarios & Comparison --------------------
+function buildScenariosFromCurrentInputs() {
+  const base = getParamsFromInputs();
+  const { slotsPerWTE } = getCostAssumptions();
+
+  const wteSlots = Math.max(0, Math.floor(slotsPerWTE || 0));
+
+  return {
+    baseline: { name: "Baseline", params: { ...base } },
+    addCapacity: { name: "+2 slots/day", params: { ...base, capacityPerDay: base.capacityPerDay + 2 } },
+    reduceDNA: { name: "Reduce DNA (−5pp)", params: { ...base, dnaRate: Math.max(0, base.dnaRate - 5) } },
+    addWTE: { name: `+1 WTE (+${wteSlots} slots/day)`, params: { ...base, capacityPerDay: base.capacityPerDay + wteSlots } }
+  };
+}
 
 function applyScenario(scn) {
-  // fill inputs
   for (const [k, v] of Object.entries(scn.params)) {
     const el = document.getElementById(k);
     if (el) el.value = v;
   }
   run();
+}
+
+function estimateIncrementalAnnualCost(baselineParams, scenarioParams) {
+  const { wteCostAnnual, slotsPerWTE } = getCostAssumptions();
+  const deltaSlots = scenarioParams.capacityPerDay - baselineParams.capacityPerDay;
+
+  if (!Number.isFinite(deltaSlots) || deltaSlots <= 0) return 0;
+  if (!Number.isFinite(slotsPerWTE) || slotsPerWTE <= 0) return 0;
+
+  const wteAdded = deltaSlots / slotsPerWTE;
+  return wteAdded * wteCostAnnual;
 }
 
 function renderComparisonTable(rows) {
@@ -264,7 +303,10 @@ function renderComparisonTable(rows) {
 
   const header = `
     <div class="compare-title">Scenario comparison</div>
-    <div class="compare-sub">Same seed and horizon for apples-to-apples comparison.</div>
+    <div class="compare-sub">
+      “£ / week saved” is illustrative: incremental annual cost inferred from extra slots/day using WTE assumptions,
+      divided by reduction in <strong>median wait</strong> (weeks).
+    </div>
   `;
 
   const tableHead = `
@@ -276,7 +318,7 @@ function renderComparisonTable(rows) {
           <th>Median wait</th>
           <th>P90 wait</th>
           <th>Seen ≤ 4 weeks</th>
-          <th>N seen</th>
+          <th>£ / week saved</th>
         </tr>
       </thead>
       <tbody>
@@ -289,48 +331,128 @@ function renderComparisonTable(rows) {
       <td>${fmtNum(r.m.medianWait, 0)}d</td>
       <td>${fmtNum(r.m.p90Wait, 0)}d</td>
       <td>${fmtPct(r.m.within28)}</td>
-      <td>${r.m.nSeen}</td>
+      <td>${r.costPerWeekSaved}</td>
     </tr>
   `).join("");
 
-  const tableFoot = `</tbody></table>`;
-
-  cmp.innerHTML = header + tableHead + body + tableFoot;
+  cmp.innerHTML = header + tableHead + body + `</tbody></table>`;
 }
 
 function runAllComparisons() {
-  const rows = Object.values(exampleScenarios).map(s => {
+  renderAssumptionsPanel();
+
+  const scenarios = buildScenariosFromCurrentInputs();
+  const baseline = scenarios.baseline;
+  const baselineOut = simulate(baseline.params);
+  const baselineMedian = baselineOut.metrics.medianWait; // days
+
+  const rows = Object.values(scenarios).map(s => {
     const out = simulate(s.params);
-    return { name: s.name, m: out.metrics };
+    const incCost = estimateIncrementalAnnualCost(baseline.params, s.params);
+
+    const weeksSaved =
+      (baselineMedian !== null && out.metrics.medianWait !== null)
+        ? (baselineMedian - out.metrics.medianWait) / 7
+        : null;
+
+    let costPerWeekSaved = "—";
+    if (incCost > 0 && weeksSaved && weeksSaved > 0.05) {
+      costPerWeekSaved = fmtGBP(incCost / weeksSaved);
+    }
+
+    return { name: s.name, m: out.metrics, costPerWeekSaved };
   });
+
+  lastComparisonRows = rows;
   renderComparisonTable(rows);
+
+  const exportBtn = document.getElementById("exportCsvBtn");
+  if (exportBtn) exportBtn.disabled = false;
 }
 
-// -------------------- Wire up buttons --------------------
+// -------------------- CSV Export --------------------
+function toCSV(rows) {
+  const header = [
+    "Scenario",
+    "Utilisation",
+    "MedianWaitDays",
+    "P90WaitDays",
+    "SeenWithin4Weeks",
+    "CostPerWeekSavedGBP"
+  ];
+
+  const lines = [header.join(",")];
+
+  for (const r of rows) {
+    const util = (r.m.utilisation ?? "");
+    const seen4 = (r.m.within28 ?? "");
+    const cost = (r.costPerWeekSaved || "").replace(/[£,]/g, ""); // numeric-ish
+
+    const row = [
+      `"${r.name.replace(/"/g, '""')}"`,
+      util === "" ? "" : util,
+      r.m.medianWait ?? "",
+      r.m.p90Wait ?? "",
+      seen4 === "" ? "" : seen4,
+      cost || ""
+    ];
+
+    lines.push(row.join(","));
+  }
+
+  return lines.join("\n");
+}
+
+function downloadCSV(filename, csvText) {
+  const blob = new Blob([csvText], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+
+  URL.revokeObjectURL(url);
+}
+
+function exportLastComparisonToCSV() {
+  if (!lastComparisonRows || !lastComparisonRows.length) return;
+
+  const csv = toCSV(lastComparisonRows);
+  const ts = new Date().toISOString().slice(0, 19).replace(/[:T]/g, "-");
+  downloadCSV(`waitlist-scenarios-${ts}.csv`, csv);
+}
+
+// -------------------- Wiring --------------------
 document.getElementById("runBtn").addEventListener("click", run);
 
-const exampleBtn = document.getElementById("exampleBtn");
-if (exampleBtn) {
-  // keep existing button: loads a random scenario into the form
-  exampleBtn.addEventListener("click", () => {
-    const keys = Object.keys(exampleScenarios);
-    const pick = exampleScenarios[keys[Math.floor(Math.random() * keys.length)]];
-    applyScenario(pick);
-  });
-}
+document.getElementById("exampleBtn").addEventListener("click", () => {
+  const scenarios = buildScenariosFromCurrentInputs();
+  const keys = Object.keys(scenarios);
+  const pick = scenarios[keys[Math.floor(Math.random() * keys.length)]];
+  applyScenario(pick);
+});
 
-// New buttons (if present in index.html)
-const b1 = document.getElementById("scenarioBaseline");
-if (b1) b1.addEventListener("click", () => applyScenario(exampleScenarios.baseline));
+document.getElementById("scenarioBaseline").addEventListener("click", () => applyScenario(buildScenariosFromCurrentInputs().baseline));
+document.getElementById("scenarioAddCapacity").addEventListener("click", () => applyScenario(buildScenariosFromCurrentInputs().addCapacity));
+document.getElementById("scenarioReduceDNA").addEventListener("click", () => applyScenario(buildScenariosFromCurrentInputs().reduceDNA));
+document.getElementById("scenarioAddWTE").addEventListener("click", () => applyScenario(buildScenariosFromCurrentInputs().addWTE));
+document.getElementById("scenarioCompareBtn").addEventListener("click", runAllComparisons);
 
-const b2 = document.getElementById("scenarioAddCapacity");
-if (b2) b2.addEventListener("click", () => applyScenario(exampleScenarios.addCapacity));
+const exportBtn = document.getElementById("exportCsvBtn");
+if (exportBtn) exportBtn.addEventListener("click", exportLastComparisonToCSV);
 
-const b3 = document.getElementById("scenarioReduceDNA");
-if (b3) b3.addEventListener("click", () => applyScenario(exampleScenarios.reduceDNA));
+// Auto-update assumptions when inputs change
+[
+  "arrivalRate","capacityPerDay","dnaRate","rebookRate","rebookDelay",
+  "days","warmup","seed","wteCostAnnual","slotsPerWTE"
+].forEach(id => {
+  const el = document.getElementById(id);
+  if (el) el.addEventListener("input", renderAssumptionsPanel);
+});
 
-const b4 = document.getElementById("scenarioCompareBtn");
-if (b4) b4.addEventListener("click", runAllComparisons);
-
-// Initial run
+// Initial render
+renderAssumptionsPanel();
 run();
