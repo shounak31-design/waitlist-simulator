@@ -9,6 +9,7 @@
 </head>
 <body>
   <div class="container">
+
     <header>
       <h1>Waitlist Capacity Simulator</h1>
       <p class="sub">
@@ -16,6 +17,7 @@
       </p>
     </header>
 
+    <!-- INPUT CONTROLS -->
     <section class="card grid">
       <div>
         <label>Avg referrals per day</label>
@@ -63,11 +65,87 @@
       </div>
     </section>
 
+    <!-- EXPLANATION -->
+    <section class="card">
+      <h2>What this simulator does</h2>
+      <p>
+        This tool models how a healthcare waitlist evolves over time based on
+        demand, appointment capacity, and non-attendance (DNA) behaviour.
+      </p>
+      <p>
+        It is designed for <strong>service planning, policy analysis, and scenario
+        testing</strong> — for example, understanding how changes in staffing,
+        referral volume, or DNA rates may affect queue size and waiting times.
+      </p>
+      <p>
+        All calculations use <strong>synthetic data</strong>. This is a planning
+        and demonstration tool only and should not be used for clinical decision-making.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>How the model works</h2>
+      <ul>
+        <li>
+          New referrals arrive each day based on an average daily referral rate
+          with natural random variation.
+        </li>
+        <li>
+          The service has a fixed number of appointment slots per day representing
+          staffing capacity.
+        </li>
+        <li>
+          A proportion of booked appointments result in a DNA (Did Not Attend).
+        </li>
+        <li>
+          Some DNAs are rebooked after a delay, adding additional demand back
+          into the system.
+        </li>
+        <li>
+          Patients who attend are removed from the queue and their waiting time
+          is recorded.
+        </li>
+      </ul>
+      <p>
+        The simulation runs day-by-day over the selected time horizon, allowing
+        the queue to stabilise after a short warm-up period.
+      </p>
+    </section>
+
+    <section class="card">
+      <h2>How to interpret the results</h2>
+      <ul>
+        <li>
+          <strong>Utilisation</strong> close to 100% indicates the service is operating
+          at or beyond sustainable capacity.
+        </li>
+        <li>
+          <strong>Mean and median wait times</strong> reflect the typical patient experience.
+        </li>
+        <li>
+          <strong>P90 wait</strong> highlights long-wait outliers and pressure in the system.
+        </li>
+        <li>
+          <strong>Seen within 2, 4, and 6 weeks</strong> shows performance against access targets.
+        </li>
+        <li>
+          The <strong>queue size over time</strong> chart indicates whether the system
+          is stable (flat) or unstable (growing).
+        </li>
+      </ul>
+      <p>
+        Scenario comparisons (e.g. increasing capacity or reducing DNA rates)
+        can be explored by adjusting inputs and rerunning the simulation.
+      </p>
+    </section>
+
+    <!-- METRICS -->
     <section class="card">
       <h2>Key metrics</h2>
       <div id="metrics" class="metrics"></div>
     </section>
 
+    <!-- CHARTS -->
     <section class="card">
       <h2>Queue size over time</h2>
       <canvas id="queueChart" height="120"></canvas>
@@ -83,6 +161,7 @@
         Built by Shounak • Repo: waitlist-simulator • v1 (daily time-step queue model)
       </p>
     </footer>
+
   </div>
 
   <script src="app.js"></script>
