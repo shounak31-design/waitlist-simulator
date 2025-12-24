@@ -17,7 +17,6 @@
 <body>
   <div class="container">
 
-    <!-- HEADER -->
     <header>
       <div>
         <h1>Waitlist Capacity Simulator</h1>
@@ -88,6 +87,13 @@
         </div>
       </section>
 
+      <!-- ASSUMPTIONS PANEL -->
+      <section class="card">
+        <h2>Assumptions</h2>
+        <p class="sub">Auto-generated from current inputs (for transparency and reporting).</p>
+        <div id="assumptionsPanel" class="assumptions"></div>
+      </section>
+
       <!-- SCENARIOS -->
       <section class="card">
         <h2>Example scenarios</h2>
@@ -99,6 +105,7 @@
           <button id="scenarioReduceDNA" class="secondary">Reduce DNA</button>
           <button id="scenarioAddWTE" class="secondary">+1 WTE</button>
           <button id="scenarioCompareBtn">Run all & compare</button>
+          <button id="exportCsvBtn" class="secondary" disabled>Export CSV</button>
         </div>
 
         <div id="scenarioCompare" class="compare"></div>
@@ -151,7 +158,7 @@
       <h2>Interpreting outputs</h2>
       <ul>
         <li>Flat queues indicate a stable system.</li>
-        <li>Growing queues indicate demand > capacity.</li>
+        <li>Growing queues indicate demand &gt; capacity.</li>
         <li>Cost per week saved reflects marginal workforce efficiency.</li>
       </ul>
     </section>
