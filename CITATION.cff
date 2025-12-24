@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+message: "If you use this software, please cite it as below."
+title: "Waitlist Capacity Simulator"
+abstract: >
+  An interactive, client-side simulation tool for modelling healthcare
+  waitlists under varying demand, capacity, and non-attendance assumptions.
+  Designed for service planning, policy analysis, and scenario testing using
+  synthetic data only.
+authors:
+  - family-names: Bhattacharjee
+    given-names: Shounak
+repository-code: "https://github.com/shounak31-design/waitlist-simulator"
+url: "https://shounak31-design.github.io/waitlist-simulator/"
+license: MIT
+keywords:
+  - healthcare-analytics
+  - waitlists
+  - capacity-planning
+  - health-policy
+  - simulation
+  - service-design
+version: "1.0.0"
+date-released: 2025-01-01
