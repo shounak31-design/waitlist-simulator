@@ -1,3 +1,4 @@
+// -------------------- RNG (seeded) --------------------
 function mulberry32(seed) {
   let a = seed >>> 0;
   return function () {
@@ -8,6 +9,7 @@ function mulberry32(seed) {
   };
 }
 
+// Poisson sampler (Knuth)
 function poisson(lambda, rand) {
   if (lambda <= 0) return 0;
   const L = Math.exp(-lambda);
@@ -20,6 +22,14 @@ function poisson(lambda, rand) {
   return k - 1;
 }
 
+// -------------------- Simulation --------------------
+// Model:
+// - Referrals arrive daily: Poisson(arrivalRate)
+// - Queue stores "dayEnteredQueue" for each person
+// - Each day: capacity slots are attempted
+// - DNA happens with dnaRate
+// - If DNA: rebook with rebookRate after rebookDelay days
+// - If not DNA: they are seen and wait time is recorded
 function simulate(params) {
   const {
     arrivalRate,
@@ -33,8 +43,8 @@ function simulate(params) {
   } = params;
 
   const rand = mulberry32(seed);
-  const futureAdds = new Array(days + rebookDelay + 2).fill(0);
 
+  const futureAdds = new Array(days + rebookDelay + 2).fill(0);
   const queue = [];
   const queueSizes = [];
   const waits = [];
@@ -105,6 +115,7 @@ function simulate(params) {
   };
 }
 
+// -------------------- Charts + UI --------------------
 let queueChart, waitChart;
 
 function fmtPct(x) {
@@ -156,8 +167,8 @@ function buildHistogram(data, binSize = 3, maxBins = 30) {
   return { labels, counts };
 }
 
-function run() {
-  const params = {
+function getParamsFromInputs() {
+  return {
     arrivalRate: parseFloat(document.getElementById("arrivalRate").value),
     capacityPerDay: parseInt(document.getElementById("capacityPerDay").value, 10),
     dnaRate: parseFloat(document.getElementById("dnaRate").value),
@@ -167,10 +178,22 @@ function run() {
     warmup: parseInt(document.getElementById("warmup").value, 10),
     seed: parseInt(document.getElementById("seed").value, 10)
   };
+}
 
+function run() {
+  const params = getParamsFromInputs();
   const out = simulate(params);
-  renderMetrics(out.metrics);
 
+  renderMetrics(out.metrics);
+  renderCharts(out);
+
+  // Clear comparison view when running normal
+  const cmp = document.getElementById("scenarioCompare");
+  if (cmp) cmp.innerHTML = "";
+}
+
+function renderCharts(out) {
+  // Queue chart
   const qctx = document.getElementById("queueChart").getContext("2d");
   if (queueChart) queueChart.destroy();
   queueChart = new Chart(qctx, {
@@ -189,6 +212,7 @@ function run() {
     }
   });
 
+  // Wait histogram
   const hist = buildHistogram(out.waits, 3, 30);
   const wctx = document.getElementById("waitChart").getContext("2d");
   if (waitChart) waitChart.destroy();
@@ -209,5 +233,104 @@ function run() {
   });
 }
 
+// -------------------- Example Scenarios --------------------
+const exampleScenarios = {
+  baseline: {
+    name: "Baseline",
+    params: { arrivalRate: 18, capacityPerDay: 16, dnaRate: 12, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
+  },
+  addCapacity: {
+    name: "+2 slots/day capacity",
+    params: { arrivalRate: 18, capacityPerDay: 18, dnaRate: 12, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
+  },
+  reduceDNA: {
+    name: "Reduce DNA (12% → 7%)",
+    params: { arrivalRate: 18, capacityPerDay: 16, dnaRate: 7, rebookRate: 70, rebookDelay: 7, days: 180, warmup: 14, seed: 42 }
+  }
+};
+
+function applyScenario(scn) {
+  // fill inputs
+  for (const [k, v] of Object.entries(scn.params)) {
+    const el = document.getElementById(k);
+    if (el) el.value = v;
+  }
+  run();
+}
+
+function renderComparisonTable(rows) {
+  const cmp = document.getElementById("scenarioCompare");
+  if (!cmp) return;
+
+  const header = `
+    <div class="compare-title">Scenario comparison</div>
+    <div class="compare-sub">Same seed and horizon for apples-to-apples comparison.</div>
+  `;
+
+  const tableHead = `
+    <table class="compare-table">
+      <thead>
+        <tr>
+          <th>Scenario</th>
+          <th>Utilisation</th>
+          <th>Median wait</th>
+          <th>P90 wait</th>
+          <th>Seen ≤ 4 weeks</th>
+          <th>N seen</th>
+        </tr>
+      </thead>
+      <tbody>
+  `;
+
+  const body = rows.map(r => `
+    <tr>
+      <td>${r.name}</td>
+      <td>${fmtPct(r.m.utilisation)}</td>
+      <td>${fmtNum(r.m.medianWait, 0)}d</td>
+      <td>${fmtNum(r.m.p90Wait, 0)}d</td>
+      <td>${fmtPct(r.m.within28)}</td>
+      <td>${r.m.nSeen}</td>
+    </tr>
+  `).join("");
+
+  const tableFoot = `</tbody></table>`;
+
+  cmp.innerHTML = header + tableHead + body + tableFoot;
+}
+
+function runAllComparisons() {
+  const rows = Object.values(exampleScenarios).map(s => {
+    const out = simulate(s.params);
+    return { name: s.name, m: out.metrics };
+  });
+  renderComparisonTable(rows);
+}
+
+// -------------------- Wire up buttons --------------------
 document.getElementById("runBtn").addEventListener("click", run);
+
+const exampleBtn = document.getElementById("exampleBtn");
+if (exampleBtn) {
+  // keep existing button: loads a random scenario into the form
+  exampleBtn.addEventListener("click", () => {
+    const keys = Object.keys(exampleScenarios);
+    const pick = exampleScenarios[keys[Math.floor(Math.random() * keys.length)]];
+    applyScenario(pick);
+  });
+}
+
+// New buttons (if present in index.html)
+const b1 = document.getElementById("scenarioBaseline");
+if (b1) b1.addEventListener("click", () => applyScenario(exampleScenarios.baseline));
+
+const b2 = document.getElementById("scenarioAddCapacity");
+if (b2) b2.addEventListener("click", () => applyScenario(exampleScenarios.addCapacity));
+
+const b3 = document.getElementById("scenarioReduceDNA");
+if (b3) b3.addEventListener("click", () => applyScenario(exampleScenarios.reduceDNA));
+
+const b4 = document.getElementById("scenarioCompareBtn");
+if (b4) b4.addEventListener("click", runAllComparisons);
+
+// Initial run
 run();
