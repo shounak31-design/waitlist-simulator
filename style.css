@@ -204,3 +204,48 @@ footer{
   .grid{ grid-template-columns: 1fr; }
   .metrics{ grid-template-columns: 1fr; }
 }
+.scenario-row{
+  display:flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  margin-top: 12px;
+}
+
+.compare{
+  margin-top: 14px;
+}
+
+.compare-title{
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.compare-sub{
+  color: rgba(255,255,255,0.66);
+  font-size: 13px;
+  margin-bottom: 10px;
+}
+
+.compare-table{
+  width: 100%;
+  border-collapse: collapse;
+  overflow: hidden;
+  border-radius: 14px;
+}
+
+.compare-table th,
+.compare-table td{
+  text-align: left;
+  padding: 10px 12px;
+  border-bottom: 1px solid rgba(255,255,255,0.10);
+  font-size: 13px;
+}
+
+.compare-table th{
+  color: rgba(255,255,255,0.75);
+  font-weight: 600;
+}
+
+.compare-table tr:last-child td{
+  border-bottom: none;
+}
