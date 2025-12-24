@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Waitlist Capacity Simulator</title>
+  <link rel="stylesheet" href="style.css" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>Waitlist Capacity Simulator</h1>
+      <p class="sub">
+        Scenario modelling demo (synthetic). Not clinical advice. No patient data.
+      </p>
+    </header>
+
+    <section class="card grid">
+      <div>
+        <label>Avg referrals per day</label>
+        <input id="arrivalRate" type="number" min="0" step="0.1" value="18" />
+      </div>
+
+      <div>
+        <label>Appointments per day (capacity)</label>
+        <input id="capacityPerDay" type="number" min="0" step="1" value="16" />
+      </div>
+
+      <div>
+        <label>DNA rate (%)</label>
+        <input id="dnaRate" type="number" min="0" max="100" step="1" value="12" />
+      </div>
+
+      <div>
+        <label>DNA rebook rate (%)</label>
+        <input id="rebookRate" type="number" min="0" max="100" step="1" value="70" />
+      </div>
+
+      <div>
+        <label>Rebook delay (days)</label>
+        <input id="rebookDelay" type="number" min="0" step="1" value="7" />
+      </div>
+
+      <div>
+        <label>Simulation horizon (days)</label>
+        <input id="days" type="number" min="14" step="1" value="180" />
+      </div>
+
+      <div>
+        <label>Warm-up (days)</label>
+        <input id="warmup" type="number" min="0" step="1" value="14" />
+      </div>
+
+      <div>
+        <label>Random seed</label>
+        <input id="seed" type="number" step="1" value="42" />
+      </div>
+
+      <div class="full">
+        <button id="runBtn">Run simulation</button>
+        <button id="exampleBtn" class="secondary">Load example scenarios</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>Key metrics</h2>
+      <div id="metrics" class="metrics"></div>
+    </section>
+
+    <section class="card">
+      <h2>Queue size over time</h2>
+      <canvas id="queueChart" height="120"></canvas>
+    </section>
+
+    <section class="card">
+      <h2>Wait time distribution (days)</h2>
+      <canvas id="waitChart" height="120"></canvas>
+    </section>
+
+    <footer>
+      <p>
+        Built by Shounak • Repo: waitlist-simulator • v1 (daily time-step queue model)
+      </p>
+    </footer>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
