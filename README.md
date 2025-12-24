@@ -19,3 +19,21 @@ Key outputs include queue size over time, waiting-time distributions, and access
 To support decision-making, the tool also includes scenario analysis. Baseline performance can be compared with alternative scenarios such as increasing capacity, reducing DNA rates, or adding workforce. For workforce scenarios, an illustrative cost model converts additional capacity into an estimated annual cost and calculates cost per week of waiting-time reduction, allowing trade-offs between cost and access improvement to be explored.
 
 All inputs and outputs use synthetic data only. The model is intended for strategic planning, policy discussion, and demonstration purposes rather than operational scheduling or clinical use.
+Rationale and Design Philosophy
+
+The idea for this tool came from observing that discussions about waiting lists often focus on single metrics (e.g. average wait time) without considering the underlying system dynamics.
+
+In practice, waiting lists are shaped by:
+	•	demand variability,
+	•	finite staffing capacity,
+	•	non-attendance behaviour,
+	•	and feedback loops such as rebooking.
+
+Small changes in any of these factors can have non-linear effects on access and backlog growth.
+
+The goal of this project was therefore to build a transparent, interactive model that:
+	•	makes system behaviour visible,
+	•	allows stakeholders to test assumptions,
+	•	and supports structured conversations about trade-offs rather than “silver-bullet” solutions.
+
+The emphasis was on clarity, explainability, and usability for non-technical audiences, reflecting how such tools are typically used in policy, service transformation, and consulting contexts.
