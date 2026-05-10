@@ -5,6 +5,9 @@
   --text:rgba(255,255,255,0.92);
   --muted:rgba(255,255,255,0.65);
   --accent:#7aa7ff;
+  --warn:#ffb86b;
+  --warn-bg:rgba(255,184,107,0.12);
+  --warn-border:rgba(255,184,107,0.4);
   --radius:18px;
 }
 
@@ -43,6 +46,11 @@ header h1{
   margin-top:16px;
 }
 
+.card h2{
+  font-size:18px;
+  margin:0 0 4px 0;
+}
+
 .analysis{margin-bottom:32px;}
 
 .grid{
@@ -72,6 +80,7 @@ input{
   border:1px solid var(--border);
   background:rgba(0,0,0,0.25);
   color:var(--text);
+  font-family:inherit;
 }
 
 button{
@@ -82,6 +91,7 @@ button{
   color:var(--text);
   cursor:pointer;
   font-weight:600;
+  font-family:inherit;
 }
 
 button.secondary{
@@ -94,10 +104,27 @@ button:disabled{
   cursor:not-allowed;
 }
 
+/* Instability banner */
+.banner-warn{
+  margin-top:16px;
+  padding:14px 16px;
+  border-radius:var(--radius);
+  background:var(--warn-bg);
+  border:1px solid var(--warn-border);
+  color:var(--text);
+  font-size:14px;
+  line-height:1.5;
+}
+
+.banner-warn strong{
+  color:var(--warn);
+}
+
 .metrics{
   display:grid;
   grid-template-columns:repeat(4,1fr);
   gap:14px;
+  margin-top:8px;
 }
 
 .metric{
@@ -109,10 +136,20 @@ button:disabled{
 .metric .k{
   font-size:12px;
   color:var(--muted);
+  margin-bottom:6px;
 }
 
 .metric .v{
   font-size:20px;
+  line-height:1.3;
+}
+
+.metric .band{
+  display:block;
+  font-size:12px;
+  color:var(--muted);
+  font-weight:400;
+  margin-top:2px;
 }
 
 .scenario-row{
@@ -145,10 +182,23 @@ button:disabled{
 .compare-table td{
   padding:10px;
   border-bottom:1px solid var(--border);
+  text-align:left;
 }
 
 .compare-table th{
   color:rgba(255,255,255,0.80);
+  font-weight:600;
+}
+
+.compare-table .band{
+  display:inline;
+  color:var(--muted);
+  font-size:12px;
+  margin-left:4px;
+}
+
+.compare-table .warn{
+  color:var(--warn);
   font-weight:600;
 }
 
@@ -177,15 +227,24 @@ button:disabled{
 }
 
 .assumption .v{
-  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", monospace;
+  font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono",monospace;
   font-size:13px;
 }
 
 /* Context blocks */
 .context{
   font-size:13.5px;
-  font-family:Inter,ui-monospace,Menlo,monospace;
   background:rgba(255,255,255,0.04);
+}
+
+.context ul{
+  margin:8px 0;
+  padding-left:20px;
+}
+
+.context li{
+  margin-bottom:6px;
+  line-height:1.5;
 }
 
 footer{
@@ -200,4 +259,6 @@ footer{
 
 @media(max-width:520px){
   .grid,.metrics,.assumptions-grid{grid-template-columns:1fr;}
+  .container{padding:24px 16px 48px;}
+  header h1{font-size:28px;}
 }

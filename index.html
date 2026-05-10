@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Waitlist Capacity Simulator</title>
 
-  <!-- Google Font: Inter -->
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
@@ -26,7 +25,6 @@
       </div>
     </header>
 
-    <!-- ================= ANALYSIS ZONE ================= -->
     <section class="analysis">
 
       <!-- INPUT CONTROLS -->
@@ -38,7 +36,7 @@
 
         <div>
           <label>Appointments per day (capacity)</label>
-          <input id="capacityPerDay" type="number" step="1" value="16" />
+          <input id="capacityPerDay" type="number" step="1" value="20" />
         </div>
 
         <div>
@@ -57,17 +55,27 @@
         </div>
 
         <div>
+          <label>Patient dropout (%/day)</label>
+          <input id="dropoutRate" type="number" step="0.1" value="0.5" />
+        </div>
+
+        <div>
           <label>Simulation horizon (days)</label>
           <input id="days" type="number" step="1" value="180" />
         </div>
 
         <div>
           <label>Warm-up (days)</label>
-          <input id="warmup" type="number" step="1" value="14" />
+          <input id="warmup" type="number" step="1" value="60" />
         </div>
 
         <div>
-          <label>Random seed</label>
+          <label>Replications (Monte Carlo)</label>
+          <input id="nReps" type="number" step="1" min="1" max="500" value="100" />
+        </div>
+
+        <div>
+          <label>Random seed (base)</label>
           <input id="seed" type="number" step="1" value="42" />
         </div>
 
@@ -78,7 +86,7 @@
 
         <div>
           <label>Extra slots/day per +1 WTE</label>
-          <input id="slotsPerWTE" type="number" step="1" value="2" />
+          <input id="slotsPerWTE" type="number" step="0.5" value="2" />
         </div>
 
         <div class="full">
@@ -86,6 +94,9 @@
           <button id="exampleBtn" class="secondary">Load example scenarios</button>
         </div>
       </section>
+
+      <!-- INSTABILITY BANNER -->
+      <div id="instabilityBanner" class="banner-warn" style="display:none;"></div>
 
       <!-- ASSUMPTIONS PANEL -->
       <section class="card">
@@ -114,32 +125,39 @@
       <!-- METRICS -->
       <section class="card">
         <h2>Key metrics</h2>
+        <p class="sub" id="repNote"></p>
         <div id="metrics" class="metrics"></div>
       </section>
 
       <!-- CHARTS -->
       <section class="card">
         <h2>Queue size over time</h2>
+        <p class="sub">Solid line is the median across replications; shaded band is 5th–95th percentile.</p>
         <canvas id="queueChart" height="120"></canvas>
       </section>
 
       <section class="card">
         <h2>Wait time distribution (days)</h2>
+        <p class="sub">Pooled across all replications.</p>
         <canvas id="waitChart" height="120"></canvas>
       </section>
 
     </section>
-    <!-- =============== END ANALYSIS ZONE =============== -->
 
     <!-- ================= CONTEXT ZONE ================= -->
     <section class="card context">
       <h2>What this simulator does</h2>
       <p>
         This tool models how a healthcare waitlist evolves over time based on demand,
-        appointment capacity, and non-attendance (DNA) behaviour.
+        appointment capacity, non-attendance (DNA) behaviour, and patient-side dropout.
       </p>
       <p>
-        It is designed for service planning, policy analysis, and scenario testing.
+        It runs a stochastic discrete-time queueing model and reports results across
+        multiple Monte Carlo replications, so outputs reflect a distribution of plausible
+        outcomes rather than a single trajectory.
+      </p>
+      <p>
+        Designed for service planning, policy analysis, and scenario testing.
         All calculations use synthetic data only.
       </p>
     </section>
@@ -147,24 +165,36 @@
     <section class="card context">
       <h2>How the model works</h2>
       <ul>
-        <li>Daily referrals follow a stochastic arrival process.</li>
-        <li>Capacity is fixed per day and represents staffing constraints.</li>
-        <li>DNAs may re-enter the system after a delay.</li>
-        <li>Attended patients exit the queue and generate waiting-time data.</li>
+        <li>Daily referrals arrive as a Poisson process (mean = avg referrals/day).</li>
+        <li>Capacity is a fixed number of appointment slots per day, set by staffing.</li>
+        <li>Each booked patient leaves the queue. With probability <em>p<sub>DNA</sub></em> they did-not-attend; with probability <em>p<sub>rebook</sub></em> they re-enter the queue after the rebook delay. Otherwise they leave the system.</li>
+        <li>Patients waiting in the queue can drop out independently each day at a small per-day hazard, reflecting people who move, recover, or disengage.</li>
+        <li>Each replication uses a deterministic seed offset from the base seed, so results are reproducible.</li>
       </ul>
     </section>
 
     <section class="card context">
       <h2>Interpreting outputs</h2>
       <ul>
-        <li>Flat queues indicate a stable system.</li>
-        <li>Growing queues indicate demand &gt; capacity.</li>
-        <li>Cost per week saved reflects marginal workforce efficiency.</li>
+        <li><strong>Stable system:</strong> queue trajectory flattens; wait-time metrics are meaningful.</li>
+        <li><strong>Unstable system:</strong> queue keeps growing across the horizon. Steady-state metrics are not meaningful — the system needs more capacity, lower demand, or higher attrition.</li>
+        <li><strong>Confidence band:</strong> shows variation across replications, not real-world uncertainty about parameters.</li>
+        <li><strong>£ / week saved:</strong> illustrative only — incremental annual cost (from extra slots/day inferred to extra WTEs) divided by the median reduction in median wait, expressed in weeks.</li>
+      </ul>
+    </section>
+
+    <section class="card context">
+      <h2>Limitations</h2>
+      <ul>
+        <li>Single-server queue: no priority tiers, no multiple clinician streams, no heterogeneous appointment lengths.</li>
+        <li>Poisson arrivals assume independence between days and may understate over-dispersion seen in real referral data.</li>
+        <li>Capacity is exogenous and constant; real capacity flexes with leave, sickness, and case-mix.</li>
+        <li>This is a teaching and scenario-comparison tool, not a forecasting system.</li>
       </ul>
     </section>
 
     <footer>
-      Built by Shounak • waitlist-simulator • v1
+      Built by Shounak • waitlist-simulator • v2
     </footer>
 
   </div>
